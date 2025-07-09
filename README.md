@@ -2,13 +2,13 @@
 
 A sophisticated quantitative trading system implementing RSI mean reversion strategies with dividend reinvestment, exponential weighting, and comprehensive risk management.
 
-## 🎯 **Latest Results: 388% Return vs 290% SPY (98% Excess Return!)**
+## 🎯 **Latest Results: 401% Return vs 290% SPY (111% Excess Return!)**
 
-Our improved backtest with dividend reinvestment and exponential weighting achieved:
-- **Total Return**: 388.1% (vs 290.2% SPY)
-- **Excess Return**: +97.8% over SPY
-- **Sharpe Ratio**: 0.76
-- **Max Drawdown**: -34.1%
+Our **optimized backtest** with dividend reinvestment and selective enhancements achieved:
+- **Total Return**: 401.5% (vs 290.2% SPY)
+- **Excess Return**: +111.3% over SPY
+- **Sharpe Ratio**: 0.65
+- **Max Drawdown**: -29.0%
 
 ## 📊 **System Overview**
 
@@ -46,9 +46,9 @@ src/
 pip install -r requirements.txt
 ```
 
-### **2. Run Improved Backtest (Recommended)**
+### **2. Run Optimized Backtest (Recommended)**
 ```bash
-python run_improved_backtest.py
+python run_optimized_backtest.py
 ```
 
 ### **3. Scan for Eligible Companies**
@@ -146,13 +146,13 @@ python scan_portfolio_strategy.py
 ## 📁 **File Structure**
 
 ### **Core Files:**
-- `run_improved_backtest.py` - Main backtest with dividend reinvestment
+- `run_optimized_backtest.py` - Main backtest with dividend reinvestment
 - `scan_portfolio_strategy.py` - Stock universe scanner
 - `src/` - Core system modules
 
 ### **Results:**
-- `improved_backtest_results_*.json` - Backtest results
-- `improved_backtest_charts_*.png` - Performance charts
+- `optimized_backtest_results_*.json` - Backtest results
+- `optimized_backtest_charts_*.png` - Performance charts
 
 ### **Data:**
 - `data/` - Historical price data
@@ -162,7 +162,7 @@ python scan_portfolio_strategy.py
 
 ### **1. Dividend Reinvestment is Critical**
 - Without dividend reinvestment: Portfolio underperforms SPY
-- With dividend reinvestment: 98% excess return over SPY
+- With dividend reinvestment: 111% excess return over SPY
 - Compounding effects are essential for long-term success
 
 ### **2. Exponential Weighting Matters**
