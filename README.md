@@ -183,16 +183,32 @@ python scan_portfolio_strategy.py
 ## Next Steps
 
 ### **Immediate Improvements:**
+
 1. **True Exponential Weighting**: Implement reliable fundamental data
 2. **Monthly Rebalancing**: Maintain target allocations
 3. **Expand Universe**: Add more eligible companies
 4. **Real-time Implementation**: Live trading capabilities
 
 ### **Advanced Features:**
+
 1. **Machine Learning**: ML-based signal generation
 2. **Alternative Data**: Sentiment analysis, news feeds
 3. **Options Strategies**: More sophisticated options strategies
 4. **Multi-timeframe**: Different timeframes for different signals
+
+### **Sharpe Ratio Optimization:**
+
+**Current Challenge**: While the strategy achieves impressive returns (401% vs 290% SPY), the Sharpe ratio could be improved through better risk-adjusted returns.
+
+**Proposed Solution**: Add alternative investments that are uncorrelated with SPY to improve portfolio diversification:
+- **Commodities**: Gold, silver, oil futures
+- **Bonds**: Treasury bonds, corporate bonds
+- **Real Estate**: REITs, real estate ETFs
+- **International Markets**: Developed and emerging market ETFs
+- **Cryptocurrencies**: Bitcoin, Ethereum (with appropriate risk management)
+- **Alternative Strategies**: Long-short equity, market neutral strategies
+
+This diversification would reduce portfolio volatility while maintaining strong absolute returns, resulting in a higher Sharpe ratio.
 
 ## Documentation
 
