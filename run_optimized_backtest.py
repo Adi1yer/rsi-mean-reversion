@@ -37,6 +37,16 @@ def run_optimized_backtest():
     initial_capital = 100000
     dividend_alloc = 0.70
     growth_alloc = 0.30
+    max_dividend_alloc = 0.70  # Upper bound: sell if above 70%
+    min_dividend_alloc = 0.65  # Lower bound: buy if below 65%
+    
+    # Dynamic rebalancing parameters
+    enable_dynamic_rebalancing = True
+    bull_market_growth_target = 0.45  # 45% growth in bull markets
+    bear_market_dividend_target = 0.85  # 85% dividend in bear markets
+    sideways_market_dividend_target = 0.70  # 70% dividend in sideways markets
+    market_lookback_days = 60  # Days to determine market trend
+    market_threshold = 0.05  # 5% change threshold for bull/bear classification
     
     # Enhanced stock lists (more companies)
     dividend_stocks = ["KO", "PG", "JNJ", "PEP", "MMM", "T", "WMT", "JPM", "BAC", "CVX", 
@@ -147,8 +157,31 @@ def run_optimized_backtest():
         }
         cash -= target_value
     
-    # Track portfolio over time with detailed breakdown
-    logger.info("📈 Calculating optimized portfolio performance...")
+    # Track portfolio over time with detailed breakdown and true dynamic rebalancing
+    logger.info("📈 Calculating optimized portfolio performance with dynamic market-based rebalancing...")
+    
+    # Market condition detection function
+    def detect_market_condition(date, spy_data, lookback_days=60, threshold=0.05):
+        """Detect market condition based on S&P 500 performance"""
+        try:
+            # Get current date index
+            current_idx = spy_data.index.get_loc(date)
+            if current_idx < lookback_days:
+                return "sideways", 0.70  # Default for early dates
+            
+            # Calculate S&P 500 change over lookback period
+            current_price = spy_data.iloc[current_idx]['Close']
+            past_price = spy_data.iloc[current_idx - lookback_days]['Close']
+            price_change = (current_price - past_price) / past_price
+            
+            if price_change > threshold:
+                return "bull", 0.55  # 55% dividend, 45% growth
+            elif price_change < -threshold:
+                return "bear", 0.85  # 85% dividend, 15% growth
+            else:
+                return "sideways", 0.70  # 70% dividend, 30% growth
+        except:
+            return "sideways", 0.70  # Default fallback
     
     # Initialize detailed tracking
     dividend_values = []
@@ -157,29 +190,28 @@ def run_optimized_backtest():
     growth_returns = []
     dividend_contributions = []
     growth_contributions = []
+    rebalancing_events = []
+    market_conditions = []
+    dynamic_targets = []
     
     for date in all_dates:
         try:
-            # Process dividends for dividend aristocrats (KEEP THIS - it's the key!)
+            # 1. Process dividends for dividend aristocrats (reinvest in same stock)
             for symbol, position in positions.items():
                 if position['category'] == 'dividend_aristocrat' and symbol in dividend_dividends:
                     dividends = dividend_dividends[symbol]
                     if not dividends.empty and date in dividends.index:
                         dividend_amount = dividends[date]
-                        dividend_value = position['shares'] * dividend_amount
-                        
-                        # Reinvest dividend in the same stock (THIS IS THE KEY!)
+                        dividend_value_received = position['shares'] * dividend_amount
                         current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
-                        new_shares = dividend_value / current_price
+                        new_shares = dividend_value_received / current_price
                         position['shares'] += new_shares
-                        
-                        logger.debug(f"💰 {date.strftime('%Y-%m-%d')}: {symbol} dividend reinvestment: ${dividend_value:.2f}")
-            
-            # Calculate current portfolio value with breakdown
+                        logger.debug(f"💰 {date.strftime('%Y-%m-%d')}: {symbol} dividend: ${dividend_value_received:.2f}")
+
+            # 2. Calculate current portfolio value and allocation
             portfolio_value = cash
             dividend_value = 0
             growth_value = 0
-            
             for symbol, position in positions.items():
                 if symbol in dividend_data:
                     current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
@@ -191,22 +223,137 @@ def run_optimized_backtest():
                     position_value = position['shares'] * current_price
                     growth_value += position_value
                     portfolio_value += position_value
-            
-            # SPY value
+            current_dividend_alloc = dividend_value / portfolio_value if portfolio_value > 0 else 0
+            current_growth_alloc = growth_value / portfolio_value if portfolio_value > 0 else 0
+
+            # 3. DYNAMIC MARKET-BASED REBALANCING: Adapt allocation based on market conditions
+            if enable_dynamic_rebalancing:
+                # Detect market condition
+                market_condition, target_dividend_alloc = detect_market_condition(
+                    date, spy_data, market_lookback_days, market_threshold
+                )
+                market_conditions.append(market_condition)
+                dynamic_targets.append(target_dividend_alloc)
+                
+                # Check if rebalancing is needed based on market condition
+                rebalance_needed = False
+                rebalance_type = ""
+                target_dividend_value = 0
+                target_growth_value = 0
+                
+                # Define tolerance bands for each market condition
+                tolerance = 0.05  # 5% tolerance
+                upper_band = target_dividend_alloc + tolerance
+                lower_band = target_dividend_alloc - tolerance
+                
+                if current_dividend_alloc > upper_band:
+                    # Sell dividend stocks if above target + tolerance
+                    target_dividend_value = portfolio_value * target_dividend_alloc
+                    target_growth_value = portfolio_value * (1 - target_dividend_alloc)
+                    excess_dividend_value = dividend_value - target_dividend_value
+                    rebalance_needed = True
+                    rebalance_type = f"sell_dividend_{market_condition}"
+                    
+                    # Sell dividend stocks proportionally
+                    for symbol, position in positions.items():
+                        if symbol in dividend_data:
+                            current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
+                            position_value = position['shares'] * current_price
+                            sell_fraction = excess_dividend_value / dividend_value if dividend_value > 0 else 0
+                            shares_to_sell = position['shares'] * sell_fraction
+                            position['shares'] -= shares_to_sell
+                            cash += shares_to_sell * current_price
+                    
+                    # Buy growth stocks proportionally
+                    for symbol, position in positions.items():
+                        if symbol in growth_data:
+                            current_price = float(growth_data[symbol].loc[date, 'Close'].iloc[0])
+                            if growth_value > 0:
+                                buy_fraction = (position['shares'] * current_price) / growth_value
+                            else:
+                                buy_fraction = 1.0 / len(growth_data)
+                            buy_amount = excess_dividend_value * buy_fraction
+                            shares_to_buy = buy_amount / current_price
+                            position['shares'] += shares_to_buy
+                            cash -= buy_amount
+                            
+                elif current_dividend_alloc < lower_band:
+                    # Buy dividend stocks if below target - tolerance
+                    target_dividend_value = portfolio_value * target_dividend_alloc
+                    target_growth_value = portfolio_value * (1 - target_dividend_alloc)
+                    deficit_dividend_value = target_dividend_value - dividend_value
+                    rebalance_needed = True
+                    rebalance_type = f"buy_dividend_{market_condition}"
+                    
+                    # Sell growth stocks proportionally
+                    for symbol, position in positions.items():
+                        if symbol in growth_data:
+                            current_price = float(growth_data[symbol].loc[date, 'Close'].iloc[0])
+                            position_value = position['shares'] * current_price
+                            sell_fraction = deficit_dividend_value / growth_value if growth_value > 0 else 0
+                            shares_to_sell = position['shares'] * sell_fraction
+                            position['shares'] -= shares_to_sell
+                            cash += shares_to_sell * current_price
+                    
+                    # Buy dividend stocks proportionally
+                    for symbol, position in positions.items():
+                        if symbol in dividend_data:
+                            current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
+                            if dividend_value > 0:
+                                buy_fraction = (position['shares'] * current_price) / dividend_value
+                            else:
+                                buy_fraction = 1.0 / len(dividend_data)
+                            buy_amount = deficit_dividend_value * buy_fraction
+                            shares_to_buy = buy_amount / current_price
+                            position['shares'] += shares_to_buy
+                            cash -= buy_amount
+                
+                # Track rebalancing event if needed
+                if rebalance_needed:
+                    rebalancing_events.append({
+                        'date': date.strftime('%Y-%m-%d'),
+                        'type': rebalance_type,
+                        'market_condition': market_condition,
+                        'target_alloc': target_dividend_alloc,
+                        'excess_moved': excess_dividend_value if 'excess_dividend_value' in locals() else deficit_dividend_value,
+                        'dividend_alloc_before': current_dividend_alloc,
+                        'dividend_alloc_after': target_dividend_value / portfolio_value
+                    })
+                    
+                    # Recalculate values after rebalance
+                    portfolio_value = cash
+                    dividend_value = 0
+                    growth_value = 0
+                    for symbol, position in positions.items():
+                        if symbol in dividend_data:
+                            current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
+                            position_value = position['shares'] * current_price
+                            dividend_value += position_value
+                            portfolio_value += position_value
+                        elif symbol in growth_data:
+                            current_price = float(growth_data[symbol].loc[date, 'Close'].iloc[0])
+                            position_value = position['shares'] * current_price
+                            growth_value += position_value
+                            portfolio_value += position_value
+                    current_dividend_alloc = dividend_value / portfolio_value if portfolio_value > 0 else 0
+                    current_growth_alloc = growth_value / portfolio_value if portfolio_value > 0 else 0
+            else:
+                # Fallback to original 65-70% band logic
+                market_conditions.append("sideways")
+                dynamic_targets.append(0.70)
+
+            # 4. SPY value
             spy_price = float(spy_data.loc[date, 'Close'].iloc[0])
             spy_value = initial_capital * (spy_price / spy_data.iloc[0]['Close'].iloc[0])
-            
-            # Record values
+
+            # 5. Record values
             portfolio_values.append(portfolio_value)
             spy_values.append(spy_value)
             dividend_values.append(dividend_value)
             growth_values.append(growth_value)
             dates.append(date)
-            
-            # Calculate contributions
             dividend_contributions.append(dividend_value / portfolio_value if portfolio_value > 0 else 0)
             growth_contributions.append(growth_value / portfolio_value if portfolio_value > 0 else 0)
-            
         except Exception as e:
             logger.error(f"❌ Error calculating values for {date}: {e}")
             continue
@@ -249,6 +396,26 @@ def run_optimized_backtest():
     dividend_return = (final_dividend_value - initial_dividend_allocation) / initial_dividend_allocation if initial_dividend_allocation > 0 else 0
     growth_return = (final_growth_value - initial_growth_allocation) / initial_growth_allocation if initial_growth_allocation > 0 else 0
     
+    # Analyze market conditions
+    market_condition_counts = {}
+    if 'market_conditions' in locals() and market_conditions:
+        for condition in market_conditions:
+            market_condition_counts[condition] = market_condition_counts.get(condition, 0) + 1
+    
+    # Calculate average allocation by market condition
+    market_allocations = {}
+    if 'market_conditions' in locals() and market_conditions and 'dynamic_targets' in locals() and dynamic_targets:
+        for i, condition in enumerate(market_conditions):
+            if condition not in market_allocations:
+                market_allocations[condition] = []
+            market_allocations[condition].append(dynamic_targets[i])
+        
+        avg_allocations = {}
+        for condition, allocations in market_allocations.items():
+            avg_allocations[condition] = sum(allocations) / len(allocations)
+    else:
+        avg_allocations = {}
+    
     # Results
     results = {
         'initial_capital': initial_capital,
@@ -276,13 +443,19 @@ def run_optimized_backtest():
         'growth_return': growth_return,
         'initial_dividend_allocation': initial_dividend_allocation,
         'initial_growth_allocation': initial_growth_allocation,
+        'rebalancing_events': rebalancing_events,
+        'max_dividend_alloc': max_dividend_alloc,
+        'market_condition_counts': market_condition_counts,
+        'avg_allocations': avg_allocations,
         'optimizations': {
             'reliable_fundamental_data': True,
             'monthly_rebalancing': False,  # REMOVED - was hurting performance
             'options_strategies': False,   # REMOVED - was adding complexity
             'dynamic_thresholds': False,   # REMOVED - was too conservative
             'dividend_reinvestment': True, # KEPT - this is the key!
-            'exponential_weighting': True  # KEPT - but simplified
+            'exponential_weighting': True, # KEPT - but simplified
+            'dynamic_rebalancing': True,   # NEW - rebalance when dividend > 75%
+            'market_based_rebalancing': enable_dynamic_rebalancing  # NEW - adapt to market conditions
         }
     }
     
@@ -344,6 +517,31 @@ def display_optimized_results(results):
     logger.info(f"   Growth Return: {results['growth_return']:.2%}")
     logger.info(f"   Initial Dividend Allocation: ${results['initial_dividend_allocation']:,.2f}")
     logger.info(f"   Initial Growth Allocation: ${results['initial_growth_allocation']:,.2f}")
+    
+    logger.info(f"\n⚖️ DYNAMIC REBALANCING:")
+    logger.info(f"   Max Dividend Allocation: {results['max_dividend_alloc']:.1%}")
+    logger.info(f"   Rebalancing Events: {len(results['rebalancing_events'])}")
+    if results['rebalancing_events']:
+        logger.info(f"   First Rebalancing: {results['rebalancing_events'][0]['date']}")
+        logger.info(f"   Last Rebalancing: {results['rebalancing_events'][-1]['date']}")
+        total_excess_moved = sum(event['excess_moved'] for event in results['rebalancing_events'])
+        logger.info(f"   Total Excess Moved: ${total_excess_moved:,.2f}")
+    else:
+        logger.info(f"   No rebalancing events occurred")
+    
+    # Market condition analysis
+    if 'market_condition_counts' in results and results['market_condition_counts']:
+        logger.info(f"\n📊 MARKET CONDITION ANALYSIS:")
+        for condition, count in results['market_condition_counts'].items():
+            percentage = (count / sum(results['market_condition_counts'].values())) * 100
+            avg_alloc = results['avg_allocations'].get(condition, 0)
+            logger.info(f"   {condition.title()} Market: {count} days ({percentage:.1f}%) - Avg Dividend Target: {avg_alloc:.1%}")
+    
+    if 'market_based_rebalancing' in results['optimizations'] and results['optimizations']['market_based_rebalancing']:
+        logger.info(f"\n🎯 MARKET-BASED STRATEGY:")
+        logger.info(f"   Bull Market: 45% Growth, 55% Dividend")
+        logger.info(f"   Bear Market: 15% Growth, 85% Dividend") 
+        logger.info(f"   Sideways Market: 30% Growth, 70% Dividend")
 
 def save_optimized_results(results):
     """Save optimized results to file."""
