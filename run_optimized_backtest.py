@@ -147,8 +147,16 @@ def run_optimized_backtest():
         }
         cash -= target_value
     
-    # Track portfolio over time (keep original dividend reinvestment)
+    # Track portfolio over time with detailed breakdown
     logger.info("📈 Calculating optimized portfolio performance...")
+    
+    # Initialize detailed tracking
+    dividend_values = []
+    growth_values = []
+    dividend_returns = []
+    growth_returns = []
+    dividend_contributions = []
+    growth_contributions = []
     
     for date in all_dates:
         try:
@@ -167,15 +175,22 @@ def run_optimized_backtest():
                         
                         logger.debug(f"💰 {date.strftime('%Y-%m-%d')}: {symbol} dividend reinvestment: ${dividend_value:.2f}")
             
-            # Calculate current portfolio value
+            # Calculate current portfolio value with breakdown
             portfolio_value = cash
+            dividend_value = 0
+            growth_value = 0
+            
             for symbol, position in positions.items():
                 if symbol in dividend_data:
                     current_price = float(dividend_data[symbol].loc[date, 'Close'].iloc[0])
-                    portfolio_value += position['shares'] * current_price
+                    position_value = position['shares'] * current_price
+                    dividend_value += position_value
+                    portfolio_value += position_value
                 elif symbol in growth_data:
                     current_price = float(growth_data[symbol].loc[date, 'Close'].iloc[0])
-                    portfolio_value += position['shares'] * current_price
+                    position_value = position['shares'] * current_price
+                    growth_value += position_value
+                    portfolio_value += position_value
             
             # SPY value
             spy_price = float(spy_data.loc[date, 'Close'].iloc[0])
@@ -184,7 +199,13 @@ def run_optimized_backtest():
             # Record values
             portfolio_values.append(portfolio_value)
             spy_values.append(spy_value)
+            dividend_values.append(dividend_value)
+            growth_values.append(growth_value)
             dates.append(date)
+            
+            # Calculate contributions
+            dividend_contributions.append(dividend_value / portfolio_value if portfolio_value > 0 else 0)
+            growth_contributions.append(growth_value / portfolio_value if portfolio_value > 0 else 0)
             
         except Exception as e:
             logger.error(f"❌ Error calculating values for {date}: {e}")
@@ -217,6 +238,17 @@ def run_optimized_backtest():
     drawdown = (pd.Series(portfolio_values) - running_max) / running_max
     max_drawdown = drawdown.min()
     
+    # Calculate final breakdown
+    final_dividend_value = dividend_values[-1] if dividend_values else 0
+    final_growth_value = growth_values[-1] if growth_values else 0
+    
+    # Calculate returns for each category
+    initial_dividend_allocation = initial_capital * dividend_alloc
+    initial_growth_allocation = initial_capital * growth_alloc
+    
+    dividend_return = (final_dividend_value - initial_dividend_allocation) / initial_dividend_allocation if initial_dividend_allocation > 0 else 0
+    growth_return = (final_growth_value - initial_growth_allocation) / initial_growth_allocation if initial_growth_allocation > 0 else 0
+    
     # Results
     results = {
         'initial_capital': initial_capital,
@@ -230,10 +262,20 @@ def run_optimized_backtest():
         'volatility': portfolio_volatility,
         'portfolio_values': portfolio_values,
         'spy_values': spy_values,
+        'dividend_values': dividend_values,
+        'growth_values': growth_values,
+        'dividend_contributions': dividend_contributions,
+        'growth_contributions': growth_contributions,
         'dates': [d.strftime('%Y-%m-%d') for d in dates],
         'dividend_stocks': list(dividend_data.keys()),
         'growth_stocks': list(growth_data.keys()),
         'dividend_weights': dividend_weights,
+        'final_dividend_value': final_dividend_value,
+        'final_growth_value': final_growth_value,
+        'dividend_return': dividend_return,
+        'growth_return': growth_return,
+        'initial_dividend_allocation': initial_dividend_allocation,
+        'initial_growth_allocation': initial_growth_allocation,
         'optimizations': {
             'reliable_fundamental_data': True,
             'monthly_rebalancing': False,  # REMOVED - was hurting performance
@@ -294,6 +336,14 @@ def display_optimized_results(results):
     sorted_weights = sorted(results['dividend_weights'].items(), key=lambda x: x[1], reverse=True)
     for i, (symbol, weight) in enumerate(sorted_weights[:5]):
         logger.info(f"   {i+1}. {symbol}: {weight:.3f}")
+    
+    logger.info(f"\n📊 PORTFOLIO BREAKDOWN:")
+    logger.info(f"   Final Dividend Value: ${results['final_dividend_value']:,.2f}")
+    logger.info(f"   Final Growth Value: ${results['final_growth_value']:,.2f}")
+    logger.info(f"   Dividend Return: {results['dividend_return']:.2%}")
+    logger.info(f"   Growth Return: {results['growth_return']:.2%}")
+    logger.info(f"   Initial Dividend Allocation: ${results['initial_dividend_allocation']:,.2f}")
+    logger.info(f"   Initial Growth Allocation: ${results['initial_growth_allocation']:,.2f}")
 
 def save_optimized_results(results):
     """Save optimized results to file."""
@@ -306,72 +356,169 @@ def save_optimized_results(results):
         logger.error(f"❌ Error saving results: {e}")
 
 def create_optimized_charts(results):
-    """Create optimized performance charts."""
+    """Create comprehensive optimized performance charts."""
     try:
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+        # Create a large figure with multiple subplots
+        fig = plt.figure(figsize=(20, 16))
         
-        # Portfolio vs SPY Value Over Time
+        # Define the grid layout
+        gs = fig.add_gridspec(4, 4, hspace=0.3, wspace=0.3)
+        
+        # 1. Portfolio vs SPY Value Over Time (top left, spans 2x2)
+        ax1 = fig.add_subplot(gs[0:2, 0:2])
         dates = pd.to_datetime(results['dates'])
         portfolio_values = results['portfolio_values']
         spy_values = results['spy_values']
         
         ax1.plot(dates, portfolio_values, label='Optimized Portfolio', linewidth=2, color='blue')
         ax1.plot(dates, spy_values, label='SPY', linewidth=2, color='red', alpha=0.7)
-        ax1.set_title('Optimized Portfolio vs SPY Value Over Time')
+        ax1.set_title('Portfolio vs SPY Value Over Time', fontsize=14, fontweight='bold')
         ax1.set_xlabel('Date')
         ax1.set_ylabel('Value ($)')
         ax1.legend()
         ax1.grid(True, alpha=0.3)
         
-        # Cumulative Returns
-        portfolio_returns = [(v - results['initial_capital']) / results['initial_capital'] * 100 for v in portfolio_values]
-        spy_returns = [(v - results['initial_capital']) / results['initial_capital'] * 100 for v in spy_values]
+        # 2. Portfolio Composition Breakdown (top right)
+        ax2 = fig.add_subplot(gs[0, 2])
+        dividend_value = results['final_dividend_value']
+        growth_value = results['final_growth_value']
+        labels = ['Dividend Stocks', 'Growth Stocks']
+        sizes = [dividend_value, growth_value]
+        colors = ['#ff9999', '#66b3ff']
         
-        ax2.plot(dates, portfolio_returns, label='Optimized Portfolio', linewidth=2, color='blue')
-        ax2.plot(dates, spy_returns, label='SPY', linewidth=2, color='red', alpha=0.7)
-        ax2.set_title('Cumulative Returns (%)')
-        ax2.set_xlabel('Date')
-        ax2.set_ylabel('Return (%)')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
+        wedges, texts, autotexts = ax2.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+        ax2.set_title('Final Portfolio Composition', fontsize=12, fontweight='bold')
         
-        # Performance Comparison
-        metrics = ['Total Return', 'SPY Return', 'Excess Return']
-        values = [results['total_return'] * 100, results['spy_total_return'] * 100, results['excess_return'] * 100]
-        colors = ['blue', 'red', 'green' if results['excess_return'] > 0 else 'orange']
+        # 3. Returns Breakdown (top right, bottom)
+        ax3 = fig.add_subplot(gs[1, 2])
+        dividend_return = results['dividend_return'] * 100
+        growth_return = results['growth_return'] * 100
+        categories = ['Dividend Stocks', 'Growth Stocks']
+        returns = [dividend_return, growth_return]
+        colors = ['#ff9999', '#66b3ff']
         
-        bars = ax3.bar(metrics, values, color=colors, alpha=0.7)
-        ax3.set_title('Performance Comparison')
+        bars = ax3.bar(categories, returns, color=colors, alpha=0.7)
+        ax3.set_title('Returns by Category', fontsize=12, fontweight='bold')
         ax3.set_ylabel('Return (%)')
         ax3.grid(True, alpha=0.3)
         
-        for bar, value in zip(bars, values):
+        for bar, value in zip(bars, returns):
             height = bar.get_height()
             ax3.text(bar.get_x() + bar.get_width()/2., height,
                     f'{value:.1f}%', ha='center', va='bottom')
         
-        # Optimization Status
+        # 4. Portfolio Allocation Over Time (middle left)
+        ax4 = fig.add_subplot(gs[2, 0])
+        dividend_contributions = [x * 100 for x in results['dividend_contributions']]
+        growth_contributions = [x * 100 for x in results['growth_contributions']]
+        
+        ax4.plot(dates, dividend_contributions, label='Dividend Stocks', color='#ff9999', linewidth=2)
+        ax4.plot(dates, growth_contributions, label='Growth Stocks', color='#66b3ff', linewidth=2)
+        ax4.set_title('Portfolio Allocation Over Time', fontsize=12, fontweight='bold')
+        ax4.set_xlabel('Date')
+        ax4.set_ylabel('Allocation (%)')
+        ax4.legend()
+        ax4.grid(True, alpha=0.3)
+        
+        # 5. Performance Comparison (middle right)
+        ax5 = fig.add_subplot(gs[2, 1])
+        metrics = ['Total Return', 'SPY Return', 'Excess Return']
+        values = [results['total_return'] * 100, results['spy_total_return'] * 100, results['excess_return'] * 100]
+        colors = ['blue', 'red', 'green' if results['excess_return'] > 0 else 'orange']
+        
+        bars = ax5.bar(metrics, values, color=colors, alpha=0.7)
+        ax5.set_title('Performance Comparison', fontsize=12, fontweight='bold')
+        ax5.set_ylabel('Return (%)')
+        ax5.grid(True, alpha=0.3)
+        ax5.tick_params(axis='x', rotation=45)
+        
+        for bar, value in zip(bars, values):
+            height = bar.get_height()
+            ax5.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{value:.1f}%', ha='center', va='bottom')
+        
+        # 6. Risk Metrics (bottom left)
+        ax6 = fig.add_subplot(gs[3, 0])
+        risk_metrics = ['Sharpe Ratio', 'Max Drawdown', 'Volatility']
+        risk_values = [results['sharpe_ratio'], results['max_drawdown'] * 100, results['volatility'] * 100]
+        colors = ['green', 'red', 'orange']
+        
+        bars = ax6.bar(risk_metrics, risk_values, color=colors, alpha=0.7)
+        ax6.set_title('Risk Metrics', fontsize=12, fontweight='bold')
+        ax6.set_ylabel('Value')
+        ax6.grid(True, alpha=0.3)
+        ax6.tick_params(axis='x', rotation=45)
+        
+        for bar, value in zip(bars, risk_values):
+            height = bar.get_height()
+            ax6.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{value:.2f}', ha='center', va='bottom')
+        
+        # 7. Optimization Status (bottom right)
+        ax7 = fig.add_subplot(gs[3, 1])
         optimizations = results['optimizations']
-        optimization_names = list(optimizations.keys())
+        optimization_names = [name.replace('_', ' ').title() for name in optimizations.keys()]
         optimization_status = [1 if applied else 0 for applied in optimizations.values()]
         
-        bars = ax4.bar(optimization_names, optimization_status, color='green', alpha=0.7)
-        ax4.set_title('Optimizations Applied')
-        ax4.set_ylabel('Status')
-        ax4.set_ylim(0, 1.2)
-        ax4.tick_params(axis='x', rotation=45)
-        ax4.grid(True, alpha=0.3)
+        bars = ax7.bar(optimization_names, optimization_status, color='green', alpha=0.7)
+        ax7.set_title('Optimizations Applied', fontsize=12, fontweight='bold')
+        ax7.set_ylabel('Status')
+        ax7.set_ylim(0, 1.2)
+        ax7.tick_params(axis='x', rotation=45)
+        ax7.grid(True, alpha=0.3)
         
         for bar, status in zip(bars, optimization_status):
             height = bar.get_height()
-            ax4.text(bar.get_x() + bar.get_width()/2., height,
+            ax7.text(bar.get_x() + bar.get_width()/2., height,
                     'Applied' if status else 'Removed', ha='center', va='bottom')
         
-        plt.tight_layout()
+        # 8. Dividend vs Growth Value Over Time (bottom middle)
+        ax8 = fig.add_subplot(gs[3, 2])
+        dividend_values = results['dividend_values']
+        growth_values = results['growth_values']
+        
+        ax8.plot(dates, dividend_values, label='Dividend Stocks', color='#ff9999', linewidth=2)
+        ax8.plot(dates, growth_values, label='Growth Stocks', color='#66b3ff', linewidth=2)
+        ax8.set_title('Dividend vs Growth Value Over Time', fontsize=12, fontweight='bold')
+        ax8.set_xlabel('Date')
+        ax8.set_ylabel('Value ($)')
+        ax8.legend()
+        ax8.grid(True, alpha=0.3)
+        
+        # 9. Summary Statistics (bottom right)
+        ax9 = fig.add_subplot(gs[3, 3])
+        ax9.axis('off')
+        
+        # Create summary text
+        summary_text = f"""
+        📊 PORTFOLIO SUMMARY
+        
+        💰 Total Return: {results['total_return']:.1%}
+        📈 SPY Return: {results['spy_total_return']:.1%}
+        🎯 Excess Return: {results['excess_return']:.1%}
+        
+        📊 Final Values:
+        💵 Portfolio: ${results['final_portfolio_value']:,.0f}
+        📊 SPY: ${results['final_spy_value']:,.0f}
+        
+        🎲 Risk Metrics:
+        📊 Sharpe: {results['sharpe_ratio']:.2f}
+        📉 Max DD: {results['max_drawdown']:.1%}
+        📈 Volatility: {results['volatility']:.1%}
+        
+        📋 Composition:
+        🏢 Dividend: ${results['final_dividend_value']:,.0f}
+        🚀 Growth: ${results['final_growth_value']:,.0f}
+        """
+        
+        ax9.text(0.05, 0.95, summary_text, transform=ax9.transAxes, fontsize=10,
+                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
+        
+        plt.suptitle('🚀 Optimized Portfolio Backtest Results', fontsize=16, fontweight='bold')
         
         filename = f"optimized_backtest_charts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         plt.savefig(filename, dpi=300, bbox_inches='tight')
-        logger.info(f"✅ Charts saved to {filename}")
+        logger.info(f"✅ Comprehensive charts saved to {filename}")
         
         plt.show()
         
