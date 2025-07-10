@@ -1,8 +1,8 @@
-# 🚀 Advanced Quantitative Trading System
+# Advanced Quantitative Trading System
 
 A sophisticated quantitative trading system implementing RSI mean reversion strategies with dividend reinvestment, exponential weighting, and comprehensive risk management.
 
-## 🎯 **Latest Results: 401% Return vs 290% SPY (111% Excess Return!)**
+## Latest Results: 401% Return vs 290% SPY (111% Excess Return!)
 
 Our **optimized backtest** with dividend reinvestment and selective enhancements achieved:
 - **Total Return**: 401.5% (vs 290.2% SPY)
@@ -10,7 +10,7 @@ Our **optimized backtest** with dividend reinvestment and selective enhancements
 - **Sharpe Ratio**: 0.65
 - **Max Drawdown**: -29.0%
 
-## 📊 **System Overview**
+## System Overview
 
 ### **Core Strategy: RSI Mean Reversion with Portfolio Optimization**
 - **70% Dividend Aristocrats**: Buy & hold with covered calls when RSI > 70
@@ -25,7 +25,7 @@ Our **optimized backtest** with dividend reinvestment and selective enhancements
 - ✅ **Comprehensive Risk Management**: Multiple hedging strategies
 - ✅ **Multiple Data Sources**: Robust backtesting framework
 
-## 🏗️ **Architecture**
+## Architecture
 
 ```
 src/
@@ -39,7 +39,7 @@ src/
     └── portfolio_backtester.py     # Portfolio backtesting
 ```
 
-## 🚀 **Quick Start**
+## Quick Start
 
 ### **1. Install Dependencies**
 ```bash
@@ -56,7 +56,7 @@ python run_optimized_backtest.py
 python scan_portfolio_strategy.py
 ```
 
-## 📈 **Strategy Details**
+## Strategy Details
 
 ### **RSI Mean Reversion Strategy**
 
@@ -84,7 +84,7 @@ python scan_portfolio_strategy.py
 - Payout ratio < 60%
 - ROE > 10%
 
-## 🛡️ **Risk Management**
+## Risk Management
 
 ### **Hedging Strategies:**
 1. **Portfolio Put Hedge**: Protects against market declines
@@ -100,7 +100,7 @@ python scan_portfolio_strategy.py
 - **Sector Concentration**: 30% maximum
 - **Correlation Risk**: 70% maximum
 
-## 📊 **Performance Metrics**
+## Performance Metrics
 
 ### **Return Metrics:**
 - Total Return
@@ -121,7 +121,7 @@ python scan_portfolio_strategy.py
 - Profit Factor
 - Average Win/Loss
 
-## 🔧 **Advanced Features**
+## Advanced Features
 
 ### **Multiple Data Sources:**
 - Yahoo Finance (free)
@@ -143,7 +143,7 @@ python scan_portfolio_strategy.py
 - Strict eligibility enforcement
 - Dividend history analysis
 
-## 📁 **File Structure**
+## File Structure
 
 ### **Core Files:**
 - `run_optimized_backtest.py` - Main backtest with dividend reinvestment
@@ -158,7 +158,7 @@ python scan_portfolio_strategy.py
 - `data/` - Historical price data
 - `results/` - Backtest results
 
-## 🎯 **Key Insights**
+## Key Insights
 
 ### **1. Dividend Reinvestment is Critical**
 - Without dividend reinvestment: Portfolio underperforms SPY
@@ -180,7 +180,7 @@ python scan_portfolio_strategy.py
 - Portfolio-level limits prevent catastrophic losses
 - Dynamic hedging adapts to changing market conditions
 
-## 🚀 **Next Steps**
+## Next Steps
 
 ### **Immediate Improvements:**
 1. **True Exponential Weighting**: Implement reliable fundamental data
@@ -194,7 +194,7 @@ python scan_portfolio_strategy.py
 3. **Options Strategies**: More sophisticated options strategies
 4. **Multi-timeframe**: Different timeframes for different signals
 
-## 📚 **Documentation**
+## Documentation
 
 ### **Technical Details:**
 - **Backtrader Analysis**: System design inspired by backtrader library
@@ -206,7 +206,7 @@ python scan_portfolio_strategy.py
 - Type hints for better code understanding
 - Example usage in each module
 
-## 🤝 **Contributing**
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -214,7 +214,7 @@ python scan_portfolio_strategy.py
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 **License**
+## License
 
 This project is for educational and research purposes. Use at your own risk.
 
