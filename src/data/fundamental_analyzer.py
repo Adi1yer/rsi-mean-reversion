@@ -101,7 +101,7 @@ class FundamentalAnalyzer:
                 reason="Meets classification criteria" if is_eligible else "Does not meet classification criteria"
             )
             
-            logger.info(f"✅ Analyzed {symbol}: {company_type.value}, Eligible: {is_eligible}")
+            logger.info(f"Analyzed {symbol}: {company_type.value}, Eligible: {is_eligible}")
             return fundamental_metrics
             
         except Exception as e:
@@ -257,7 +257,7 @@ class FundamentalAnalyzer:
         """Analyze multiple companies and return results."""
         results = {}
         
-        logger.info(f"🔍 Analyzing {len(symbols)} companies for fundamental eligibility...")
+        logger.info(f"Analyzing {len(symbols)} companies for fundamental eligibility...")
         
         for symbol in symbols:
             try:

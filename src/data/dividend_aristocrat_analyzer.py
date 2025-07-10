@@ -107,7 +107,7 @@ class DividendAristocratAnalyzer:
                 analysis_date=datetime.now()
             )
             
-            logger.info(f"✅ Analyzed {symbol}: {dividend_status.value}, "
+            logger.info(f"Analyzed {symbol}: {dividend_status.value}, "
                        f"Years: {consecutive_years}, Yield: {current_yield:.2f}%, "
                        f"Eligible: {is_eligible}")
             
@@ -268,7 +268,7 @@ class DividendAristocratAnalyzer:
         """Analyze multiple companies for dividend aristocrat status."""
         results = {}
         
-        logger.info(f"🔍 Analyzing {len(symbols)} companies for dividend aristocrat status...")
+        logger.info(f"Analyzing {len(symbols)} companies for dividend aristocrat status...")
         
         for symbol in symbols:
             try:

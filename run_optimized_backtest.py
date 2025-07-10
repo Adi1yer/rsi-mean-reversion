@@ -30,7 +30,7 @@ def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
 
 def run_optimized_backtest():
     """Run optimized backtest combining best of both versions."""
-    logger.info("🚀 OPTIMIZED PORTFOLIO BACKTEST")
+    logger.info("OPTIMIZED PORTFOLIO BACKTEST")
     logger.info("="*60)
     
     # Strategy parameters (keep original allocation)
@@ -62,7 +62,7 @@ def run_optimized_backtest():
     start_date = "2014-01-01"
     end_date = "2024-12-31"
     
-    logger.info(f"📊 Loading data for {len(dividend_stocks)} dividend stocks and {len(growth_stocks)} growth stocks")
+    logger.info(f"Loading data for {len(dividend_stocks)} dividend stocks and {len(growth_stocks)} growth stocks")
     
     # Get SPY data
     spy_data = yf.download("SPY", start=start_date, end=end_date)
@@ -82,7 +82,7 @@ def run_optimized_backtest():
                 ticker = yf.Ticker(symbol)
                 dividends = ticker.dividends
                 dividend_dividends[symbol] = dividends
-                logger.info(f"✅ Loaded {symbol}")
+                logger.info(f"Loaded {symbol}")
             else:
                 logger.warning(f"⚠️ No data for {symbol}")
         except Exception as e:
@@ -95,20 +95,20 @@ def run_optimized_backtest():
             data = yf.download(symbol, start=start_date, end=end_date)
             if data is not None and not data.empty:
                 growth_data[symbol] = data
-                logger.info(f"✅ Loaded {symbol}")
+                logger.info(f"Loaded {symbol}")
             else:
                 logger.warning(f"⚠️ No data for {symbol}")
         except Exception as e:
             logger.error(f"❌ Error loading {symbol}: {e}")
     
     # Use reliable fundamental data for weights (but keep it simple)
-    logger.info("📊 Calculating exponential weights using reliable fundamental data...")
+    logger.info("Calculating exponential weights using reliable fundamental data...")
     dividend_weights = fundamental_data.get_exponential_weights(list(dividend_data.keys()))
     
     # Equal weights for growth stocks (keep original simplicity)
     growth_weight_per_stock = 1.0 / len(growth_data) if growth_data else 0
     
-    logger.info("📈 Dividend stock weights (Top 10):")
+    logger.info("Dividend stock weights (Top 10):")
     sorted_weights = sorted(dividend_weights.items(), key=lambda x: x[1], reverse=True)
     for i, (symbol, weight) in enumerate(sorted_weights[:10]):
         logger.info(f"   {i+1}. {symbol}: {weight:.3f}")
@@ -158,7 +158,7 @@ def run_optimized_backtest():
         cash -= target_value
     
     # Track portfolio over time with detailed breakdown and true dynamic rebalancing
-    logger.info("📈 Calculating optimized portfolio performance with dynamic market-based rebalancing...")
+    logger.info("Calculating optimized portfolio performance with dynamic market-based rebalancing...")
     
     # Market condition detection function
     def detect_market_condition(date, spy_data, lookback_days=60, threshold=0.05):
@@ -473,10 +473,10 @@ def run_optimized_backtest():
 def display_optimized_results(results):
     """Display optimized backtest results."""
     logger.info("\n" + "="*60)
-    logger.info("📊 OPTIMIZED BACKTEST RESULTS")
+    logger.info("OPTIMIZED BACKTEST RESULTS")
     logger.info("="*60)
     
-    logger.info(f"\n💰 PERFORMANCE:")
+    logger.info(f"\nPERFORMANCE:")
     logger.info(f"   Initial Capital: ${results['initial_capital']:,.2f}")
     logger.info(f"   Final Portfolio Value: ${results['final_portfolio_value']:,.2f}")
     logger.info(f"   Final SPY Value: ${results['final_spy_value']:,.2f}")
@@ -484,33 +484,33 @@ def display_optimized_results(results):
     logger.info(f"   SPY Return: {results['spy_total_return']:.2%}")
     logger.info(f"   Excess Return: {results['excess_return']:.2%}")
     
-    logger.info(f"\n📈 RISK METRICS:")
+    logger.info(f"\nRISK METRICS:")
     logger.info(f"   Sharpe Ratio: {results['sharpe_ratio']:.2f}")
     logger.info(f"   Max Drawdown: {results['max_drawdown']:.2%}")
     logger.info(f"   Volatility: {results['volatility']:.2%}")
     
-    logger.info(f"\n🎯 STRATEGY ANALYSIS:")
+    logger.info(f"\nSTRATEGY ANALYSIS:")
     if results['excess_return'] > 0:
-        logger.info(f"   ✅ Portfolio outperformed SPY by {results['excess_return']:.2%}")
+        logger.info(f"   Portfolio outperformed SPY by {results['excess_return']:.2%}")
     else:
-        logger.info(f"   ❌ Portfolio underperformed SPY by {abs(results['excess_return']):.2%}")
+        logger.info(f"   Portfolio underperformed SPY by {abs(results['excess_return']):.2%}")
     
-    logger.info(f"\n🔧 OPTIMIZATIONS APPLIED:")
+    logger.info(f"\nOPTIMIZATIONS APPLIED:")
     optimizations = results['optimizations']
     for optimization, applied in optimizations.items():
         status = "✅" if applied else "❌"
         logger.info(f"   {status} {optimization.replace('_', ' ').title()}")
     
-    logger.info(f"\n📊 PORTFOLIO COMPOSITION:")
+    logger.info(f"\nPORTFOLIO COMPOSITION:")
     logger.info(f"   Dividend Stocks: {', '.join(results['dividend_stocks'])}")
     logger.info(f"   Growth Stocks: {', '.join(results['growth_stocks'])}")
     
-    logger.info(f"\n⚖️ EXPONENTIAL WEIGHTS (Top 5):")
+    logger.info(f"\nEXPONENTIAL WEIGHTS (Top 5):")
     sorted_weights = sorted(results['dividend_weights'].items(), key=lambda x: x[1], reverse=True)
     for i, (symbol, weight) in enumerate(sorted_weights[:5]):
         logger.info(f"   {i+1}. {symbol}: {weight:.3f}")
     
-    logger.info(f"\n📊 PORTFOLIO BREAKDOWN:")
+    logger.info(f"\nPORTFOLIO BREAKDOWN:")
     logger.info(f"   Final Dividend Value: ${results['final_dividend_value']:,.2f}")
     logger.info(f"   Final Growth Value: ${results['final_growth_value']:,.2f}")
     logger.info(f"   Dividend Return: {results['dividend_return']:.2%}")
@@ -518,7 +518,7 @@ def display_optimized_results(results):
     logger.info(f"   Initial Dividend Allocation: ${results['initial_dividend_allocation']:,.2f}")
     logger.info(f"   Initial Growth Allocation: ${results['initial_growth_allocation']:,.2f}")
     
-    logger.info(f"\n⚖️ DYNAMIC REBALANCING:")
+    logger.info(f"\nDYNAMIC REBALANCING:")
     logger.info(f"   Max Dividend Allocation: {results['max_dividend_alloc']:.1%}")
     logger.info(f"   Rebalancing Events: {len(results['rebalancing_events'])}")
     if results['rebalancing_events']:
@@ -531,14 +531,14 @@ def display_optimized_results(results):
     
     # Market condition analysis
     if 'market_condition_counts' in results and results['market_condition_counts']:
-        logger.info(f"\n📊 MARKET CONDITION ANALYSIS:")
+        logger.info(f"\nMARKET CONDITION ANALYSIS:")
         for condition, count in results['market_condition_counts'].items():
             percentage = (count / sum(results['market_condition_counts'].values())) * 100
             avg_alloc = results['avg_allocations'].get(condition, 0)
             logger.info(f"   {condition.title()} Market: {count} days ({percentage:.1f}%) - Avg Dividend Target: {avg_alloc:.1%}")
     
     if 'market_based_rebalancing' in results['optimizations'] and results['optimizations']['market_based_rebalancing']:
-        logger.info(f"\n🎯 MARKET-BASED STRATEGY:")
+        logger.info(f"\nMARKET-BASED STRATEGY:")
         logger.info(f"   Bull Market: 45% Growth, 55% Dividend")
         logger.info(f"   Bear Market: 15% Growth, 85% Dividend") 
         logger.info(f"   Sideways Market: 30% Growth, 70% Dividend")
@@ -549,7 +549,7 @@ def save_optimized_results(results):
         filename = f"optimized_backtest_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(filename, 'w') as f:
             json.dump(results, f, indent=2)
-        logger.info(f"✅ Results saved to {filename}")
+        logger.info(f"Results saved to {filename}")
     except Exception as e:
         logger.error(f"❌ Error saving results: {e}")
 
@@ -716,7 +716,7 @@ def create_optimized_charts(results):
         
         filename = f"optimized_backtest_charts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         plt.savefig(filename, dpi=300, bbox_inches='tight')
-        logger.info(f"✅ Comprehensive charts saved to {filename}")
+        logger.info(f"Comprehensive charts saved to {filename}")
         
         plt.show()
         
@@ -728,7 +728,7 @@ def main():
     try:
         results = run_optimized_backtest()
         if results:
-            logger.info("\n✅ Optimized backtest completed successfully!")
+            logger.info("\nOptimized backtest completed successfully!")
         else:
             logger.error("\n❌ Optimized backtest failed!")
         return results

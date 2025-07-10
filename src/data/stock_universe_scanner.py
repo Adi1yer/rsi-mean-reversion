@@ -51,7 +51,7 @@ class StockUniverseScanner:
         
     def get_all_us_stocks(self) -> List[StockInfo]:
         """Get all US stocks from major exchanges."""
-        logger.info("🔍 Scanning US stock universe...")
+        logger.info("Scanning US stock universe...")
         
         all_stocks = []
         
@@ -62,7 +62,7 @@ class StockUniverseScanner:
             
             # Get all tickers from major exchanges
             for exchange in self.us_exchanges:
-                logger.info(f"📊 Scanning {exchange}...")
+                logger.info(f"Scanning {exchange}...")
                 
                 try:
                     # Get tickers for this exchange
@@ -86,7 +86,7 @@ class StockUniverseScanner:
                     logger.warning(f"Error scanning {exchange}: {e}")
                     continue
             
-            logger.info(f"📊 Found {len(all_stocks)} eligible US stocks")
+            logger.info(f"Found {len(all_stocks)} eligible US stocks")
             return all_stocks
             
         except Exception as e:
@@ -209,7 +209,7 @@ class StockUniverseScanner:
     
     def scan_for_eligible_companies(self, max_companies: int = 100) -> Dict:
         """Scan all US stocks to find eligible companies."""
-        logger.info("🔍 Scanning US stock universe for eligible companies...")
+        logger.info("Scanning US stock universe for eligible companies...")
         
         # Get all US stocks
         all_stocks = self.get_all_us_stocks()
@@ -220,13 +220,13 @@ class StockUniverseScanner:
         
         # Limit to max_companies for performance
         if len(all_stocks) > max_companies:
-            logger.info(f"📊 Limiting analysis to {max_companies} stocks for performance")
+            logger.info(f"Limiting analysis to {max_companies} stocks for performance")
             all_stocks = all_stocks[:max_companies]
         
         # Extract symbols
         symbols = [stock.symbol for stock in all_stocks]
         
-        logger.info(f"📊 Analyzing {len(symbols)} US stocks for fundamental eligibility...")
+        logger.info(f"Analyzing {len(symbols)} US stocks for fundamental eligibility...")
         
         # Analyze fundamentals
         try:
@@ -287,7 +287,7 @@ class StockUniverseScanner:
                     "Consider adding more dividend aristocrats for portfolio stability"
                 )
             
-            logger.info(f"✅ Scan completed: {results['scan_summary']['eligible_companies']} eligible companies found")
+            logger.info(f"Scan completed: {results['scan_summary']['eligible_companies']} eligible companies found")
             return results
             
         except Exception as e:
@@ -296,7 +296,7 @@ class StockUniverseScanner:
     
     def get_high_growth_unprofitable_candidates(self) -> List[Dict]:
         """Get specifically high-growth unprofitable candidates."""
-        logger.info("🎯 Finding high-growth unprofitable candidates...")
+        logger.info("Finding high-growth unprofitable candidates...")
         
         # Focus on sectors likely to have high-growth unprofitable companies
         target_sectors = [
@@ -314,7 +314,7 @@ class StockUniverseScanner:
         
         symbols = [stock.symbol for stock in target_stocks]
         
-        logger.info(f"📊 Analyzing {len(symbols)} potential high-growth candidates...")
+        logger.info(f"Analyzing {len(symbols)} potential high-growth candidates...")
         
         # Analyze fundamentals
         analysis_results = self.fundamental_analyzer.analyze_portfolio(symbols)
@@ -340,7 +340,7 @@ class StockUniverseScanner:
         # Sort by revenue growth
         candidates.sort(key=lambda x: x['revenue_growth'], reverse=True)
         
-        logger.info(f"✅ Found {len(candidates)} high-growth unprofitable candidates")
+        logger.info(f"Found {len(candidates)} high-growth unprofitable candidates")
         return candidates
     
     def save_scan_results(self, results: Dict, filename: str = "us_stock_scan_results.json"):
@@ -357,7 +357,7 @@ class StockUniverseScanner:
             with open(filename, 'w') as f:
                 json.dump(results, f, indent=2, default=str)
             
-            logger.info(f"✅ Scan results saved to {filename}")
+            logger.info(f"Scan results saved to {filename}")
             
         except Exception as e:
             logger.error(f"❌ Error saving scan results: {e}")
@@ -365,7 +365,7 @@ class StockUniverseScanner:
     def display_scan_results(self, results: Dict):
         """Display comprehensive scan results."""
         logger.info("\n" + "="*60)
-        logger.info("📊 US STOCK UNIVERSE SCAN RESULTS")
+        logger.info("US STOCK UNIVERSE SCAN RESULTS")
         logger.info("="*60)
         
         if 'error' in results:
@@ -373,7 +373,7 @@ class StockUniverseScanner:
             return
         
         summary = results.get('scan_summary', {})
-        logger.info(f"\n📈 SCAN SUMMARY:")
+        logger.info(f"\nSCAN SUMMARY:")
         logger.info(f"   Total Stocks Scanned: {summary.get('total_stocks_scanned', 0)}")
         logger.info(f"   Eligible Companies: {summary.get('eligible_companies', 0)}")
         logger.info(f"   High-Growth Unprofitable: {summary.get('high_growth_unprofitable', 0)}")
@@ -394,7 +394,7 @@ class StockUniverseScanner:
         # Show recommendations
         recommendations = results.get('recommendations', [])
         if recommendations:
-            logger.info(f"\n💡 RECOMMENDATIONS:")
+            logger.info(f"\nRECOMMENDATIONS:")
             for rec in recommendations:
                 logger.info(f"   • {rec}")
         
