@@ -14,8 +14,8 @@ from enum import Enum
 
 from src.data.fundamental_analyzer import FundamentalAnalyzer
 from src.data.dividend_aristocrat_analyzer import DividendAristocratAnalyzer
-from src.strategies.portfolio_strategy import PortfolioStrategy
-from src.backtesting.analyzers import calculate_rsi, calculate_sharpe_ratio, calculate_max_drawdown
+# PortfolioStrategy removed due to import issues - implementing needed methods directly
+# Analyzer functions implemented directly to avoid import issues
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class PortfolioBacktester:
         # Initialize analyzers
         self.fundamental_analyzer = FundamentalAnalyzer()
         self.dividend_analyzer = DividendAristocratAnalyzer()
-        self.portfolio_strategy = PortfolioStrategy()
+        # PortfolioStrategy removed - implementing needed methods directly
         
         # Strategy parameters
         self.dividend_alloc = 0.70
@@ -135,9 +135,22 @@ class PortfolioBacktester:
     def get_portfolio_allocation(self, dividend_data: List[Dict], 
                                growth_data: List[Dict]) -> Dict:
         """Get current portfolio allocation."""
-        return self.portfolio_strategy.get_latest_portfolio_allocation(
-            dividend_data, growth_data
-        )
+        # Simple implementation without PortfolioStrategy dependency
+        total_dividend_value = sum(item['current_value'] for item in dividend_data)
+        total_growth_value = sum(item['current_value'] for item in growth_data)
+        total_value = total_dividend_value + total_growth_value
+        
+        if total_value == 0:
+            return {'dividend_pct': 0.7, 'growth_pct': 0.3}
+        
+        dividend_pct = total_dividend_value / total_value
+        growth_pct = total_growth_value / total_value
+        
+        return {
+            'dividend_pct': dividend_pct,
+            'growth_pct': growth_pct,
+            'total_value': total_value
+        }
     
     def calculate_rsi_signals(self, symbol: str, date: datetime) -> Dict:
         """Calculate RSI signals for a stock on a given date."""
@@ -435,3 +448,39 @@ class PortfolioBacktester:
         logger.info(f"Excess Return: {total_return - spy_total_return:.2%}")
         
         return results 
+
+# Helper functions implemented directly to avoid import issues
+def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
+    """Calculate RSI for a price series."""
+    delta = prices.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.02) -> float:
+    """Calculate Sharpe ratio."""
+    if len(returns) == 0:
+        return 0.0
+    excess_returns = returns - risk_free_rate/252  # Daily risk-free rate
+    if excess_returns.std() == 0:
+        return 0.0
+    return np.sqrt(252) * excess_returns.mean() / excess_returns.std()
+
+def calculate_max_drawdown(values: List[float]) -> float:
+    """Calculate maximum drawdown."""
+    if not values:
+        return 0.0
+    
+    peak = values[0]
+    max_dd = 0.0
+    
+    for value in values:
+        if value > peak:
+            peak = value
+        dd = (peak - value) / peak
+        if dd > max_dd:
+            max_dd = dd
+    
+    return max_dd 
