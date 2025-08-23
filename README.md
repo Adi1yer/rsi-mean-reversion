@@ -46,15 +46,46 @@ src/
 pip install -r requirements.txt
 ```
 
-### **2. Run Optimized Backtest (Recommended)**
+### **2. Run Setup (Optional)**
+```bash
+python setup.py
+```
+
+### **3. Run Optimized Backtest**
 ```bash
 python run_optimized_backtest.py
 ```
 
-### **3. Scan for Eligible Companies**
+This will:
+- Download 10 years of market data (2014-2024)
+- Execute the optimized strategy with dynamic rebalancing
+- Generate comprehensive performance charts
+- Save results to `results/` directory
+
+### **4. Test Your Installation**
+Run the comprehensive test script:
 ```bash
-python scan_portfolio_strategy.py
+python test_installation.py
 ```
+
+This will verify:
+- All dependencies are installed
+- All modules can be imported
+- Core components work correctly
+- Directory structure is proper
+
+Expected output: `🎉 ALL TESTS PASSED!`
+
+### **5. Expected Results**
+When you run the backtest, you should see results similar to:
+```
+Final Portfolio Value: $468,461.38
+Total Return: 368.46%
+SPY Return: 290.23%
+Excess Return: 78.23%
+```
+
+Charts and detailed results will be saved to the `results/` directory.
 
 ## Strategy Details
 
@@ -146,9 +177,9 @@ python scan_portfolio_strategy.py
 ## File Structure
 
 ### **Core Files:**
-- `run_optimized_backtest.py` - Main backtest with dividend reinvestment
-- `scan_portfolio_strategy.py` - Stock universe scanner
-- `src/` - Core system modules
+- `run_optimized_backtest.py` - Main backtest with dividend reinvestment and dynamic rebalancing
+- `setup.py` - Dependency installer and directory creator
+- `src/` - Core system modules (data analysis, backtesting, strategies)
 
 ### **Results:**
 - `optimized_backtest_results_*.json` - Backtest results
