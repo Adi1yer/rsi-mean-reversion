@@ -51,8 +51,8 @@ def main():
     print("\n✓ Setup completed successfully!")
     print("\nTo run the trading bot:")
     print("  python -m src/run_optimized_backtest.py")
-    print("\nTo run a quick test:")
-    print("  python test_bot.py")
+
+    print("Fork this repository to make it your own with your custom strategies. Feel free to contribute!")
     
     return True
 
